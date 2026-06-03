@@ -40,3 +40,66 @@ spring:
   flyway: #handle migrations
     enabled: true
     locations: classpath:db/migration
+
+grpc:
+  server:
+    port: 9081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  zipkin: # for tracing
+    tracing:
+      endpoint: ${ZIPKIN_BASE_URL:http://localhost:9411}/api/v2/spans
+
+logging:
+  level:
+    com.harrified.finCore: INFO
+    org.hibernate.SQL: WARN
+
+# manage different spring profiles
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+logging:
+  level:
+    com.harrified.ledger: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: staging
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+  jpa:
+    show-sql: false
+management:
+  tracing:
+    sampling:
+      probability: 0.1
