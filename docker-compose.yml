@@ -1,0 +1,164 @@
+version: '3.9'
+
+services:
+
+  # ─── Infrastructure ───────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: finCore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finCore
+      POSTGRES_PASSWORD: finCore_secret
+      POSTGRES_DB: finCore_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finCore -d finCore_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - finCore-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    container_name: finCore-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - finCore-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: finCore-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - finCore-network
+
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: finCore-localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb,s3,sqs,ses,secretsmanager,kms
+      DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      DOCKER_HOST: unix:///var/run/docker.sock
+      LS_LOG: warn
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./infrastructure/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - finCore-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: finCore-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - finCore-network
+
+  zipkin:
+    image: openzipkin/zipkin:3.4
+    container_name: finCore-zipkin
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    networks:
+      - finCore-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: finCore-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    ports:
+      - "8888:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: finCore-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - finCore-network
+
+  # ─── Microservices ─────────────────────────────────────────────────────────────
+
+  account-service:
+    build:
+      context: .
+      dockerfile: account-service/Dockerfile
+    container_name: finCore-account-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+      - "9081:9081"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/account_db
+      DB_USERNAME: finCore
+      DB_PASSWORD: finCore_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      ZIPKIN_BASE_URL: http://zipkin:9411
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - finCore-network
+
+
+# ─── Volumes ───────────────────────────────────────────────────────────────────
+
+volumes:
+  postgres_data:
+    driver: local
+  localstack_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# ─── Networks ──────────────────────────────────────────────────────────────────
+
+networks:
+  finCore-network:
+    driver: bridge

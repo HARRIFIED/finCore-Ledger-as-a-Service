@@ -1,0 +1,55 @@
+plugins {
+    id 'org.springframework.boot' version '4.0.6' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.google.protobuf' version '0.9.4' apply false
+}
+
+allprojects {
+    group = 'com.harrified.finCore'
+    version = '0.0.1'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:4.0.6"
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.3"
+            mavenBom "software.amazon.awssdk:bom:2.28.4"
+            mavenBom "org.testcontainers:testcontainers-bom:1.20.3"
+        }
+        dependencies {
+            dependencySet(group: 'io.grpc', version: '1.68.0') {
+                entry 'grpc-api'
+                entry 'grpc-core'
+                entry 'grpc-stub'
+                entry 'grpc-protobuf'
+                entry 'grpc-protobuf-lite'
+                entry 'grpc-netty-shaded'
+                entry 'grpc-context'
+                entry 'grpc-services'
+            }
+        }
+    }
+
+    dependencies {
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
