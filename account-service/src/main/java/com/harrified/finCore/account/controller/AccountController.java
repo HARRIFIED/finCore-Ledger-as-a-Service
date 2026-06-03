@@ -8,11 +8,6 @@ public class AccountController {
 
     @GetMapping("/hello")
     public String greetings() {
-        return "Hello Bolanla of IB";
-    }
-
-    @GetMapping("/hello2")
-    public String greetings2() {
-        return "Hello Bolanla 3 Goats...............";
+        return "Hello!!!";
     }
 }
