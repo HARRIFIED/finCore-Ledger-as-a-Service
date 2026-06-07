@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package fincore.identity.v1;
+
+option java_package = "com.harrified.finCore.grpc.identity";
+option java_outer_classname = "IdentityProto";
+option java_multiple_files = true;
+
+import "common.proto";
+
+// Internal gRPC service — called by api-gateway and other services.
+service IdentityService {
+  // Resolve a user by ID — used by downstream services to hydrate owner details.
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+
+  // Expose JWKS public keys — used by api-gateway to verify JWT signatures.
+  rpc GetJwks(GetJwksRequest) returns (GetJwksResponse);
+
+  // List users for a tenant — used by admin tooling.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}
+
+// ─── Request / Response messages ────────────────────────────────────────────
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message ListUsersRequest {
+  string            tenant_id    = 1;
+  fincore.common.v1.PageRequest page = 2;
+}
+
+message ListUsersResponse {
+  repeated UserResponse         users = 1;
+  fincore.common.v1.PageMeta    meta  = 2;
+}
+
+message GetJwksRequest {}
+
+message GetJwksResponse {
+  repeated JwkKey keys = 1;
+}
+
+// ─── Domain messages ─────────────────────────────────────────────────────────
+
+message UserResponse {
+  string   id           = 1;
+  string   tenant_id    = 2;
+  string   email        = 3;
+  string   first_name   = 4;
+  string   last_name    = 5;
+  string   phone_number = 6;
+  repeated string roles = 7; // e.g. CUSTOMER, TENANT_ADMIN, SUPER_ADMIN
+  string   kyc_status   = 8; // UNVERIFIED | PENDING | VERIFIED | REJECTED
+  string   status       = 9; // ACTIVE | INACTIVE | SUSPENDED
+}
+
+// Represents a single key in a JSON Web Key Set (JWKS).
+message JwkKey {
+  string kty = 1; // Key type   — always "RSA"
+  string use = 2; // Usage      — always "sig"
+  string alg = 3; // Algorithm  — e.g. "RS256"
+  string kid = 4; // Key ID     — matches "kid" claim in JWT header
+  string n   = 5; // RSA modulus   (Base64url)
+  string e   = 6; // RSA exponent  (Base64url)
+}

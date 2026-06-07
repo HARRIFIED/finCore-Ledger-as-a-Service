@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package fincore.common.v1;
+
+option java_package = "com.harrified.finCore.grpc.common";
+option java_outer_classname = "CommonProto";
+option java_multiple_files = true;
+
+// Monetary value — amount as string to avoid floating-point precision loss.
+message Money {
+  string currency = 1; // ISO 4217 e.g. NGN, USD
+  string amount   = 2; // decimal string e.g. "1500.00"
+}
+
+message PageRequest {
+  int32 page = 1; // 0-based
+  int32 size = 2;
+}
+
+message PageMeta {
+  int32 page            = 1;
+  int32 size            = 2;
+  int64 total_elements  = 3;
+  int32 total_pages     = 4;
+}
+
+message Error {
+  string code    = 1; // machine-readable e.g. ACCOUNT_NOT_FOUND
+  string message = 2; // human-readable detail
+}
