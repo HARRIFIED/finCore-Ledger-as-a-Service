@@ -15,7 +15,6 @@ public record CreateAccountRequest(
     String description,
     @NotNull AccountType type,
     @NotBlank @Pattern(regexp = "^[A-Z]{3}$", message = "Currency must be a 3-letter ISO code") String currency,
-    @NotNull UUID ownerId,
     UUID parentAccountId,
     Map<String, Object> metadata,
     List<String> tags
