@@ -1,13 +1,9 @@
 # finCore — Ledger-as-a-Service
 
-A suite of independently deployable microservices forming a **multi-tenant, double-entry bookkeeping engine** capable of powering fintech products at scale. Built on Java 21, Spring Boot 3, gRPC, and Apache Kafka.
-
-Services communicate internally over **gRPC** for low-latency calls and **Kafka** for event-driven workflows. The full system is containerised with Docker and deployable to Kubernetes.
+A suite of independently deployable microservices forming a **multi-tenant, double-entry bookkeeping engine** capable of powering fintech products at scale. Currently being built on Java 21, Spring Boot 3, gRPC, and Apache Kafka.
 
 ---
-
 ## Architecture Overview
-
 ```
              External Clients (Mobile, Web, Partner APIs)
                                   │
