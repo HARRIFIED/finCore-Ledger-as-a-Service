@@ -8,6 +8,12 @@ CREATE TABLE users (
     phone_number  VARCHAR(30),
     role          VARCHAR(20)  NOT NULL DEFAULT 'CUSTOMER',
     kyc_status    VARCHAR(20)  NOT NULL DEFAULT 'UNVERIFIED',
+    address_street       VARCHAR(255),
+    address_city         VARCHAR(100),
+    address_state        VARCHAR(100),
+    address_country      VARCHAR(100),
+    address_postal_code  VARCHAR(20),
+
     status        VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
     version       BIGINT       NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),

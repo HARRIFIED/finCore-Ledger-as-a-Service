@@ -1,5 +1,6 @@
 package com.harrified.finCore.iam.domain.entity;
 
+import com.harrified.finCore.iam.domain.embeddable.Address;
 import com.harrified.finCore.iam.domain.enums.KycStatus;
 import com.harrified.finCore.iam.domain.enums.UserRole;
 import com.harrified.finCore.iam.domain.enums.UserStatus;
@@ -52,6 +53,16 @@ public class User {
 
     @Column(name = "phone_number", length = 30)
     private String phoneNumber;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "street",     column = @Column(name = "address_street",      length = 255)),
+        @AttributeOverride(name = "city",       column = @Column(name = "address_city",        length = 100)),
+        @AttributeOverride(name = "state",      column = @Column(name = "address_state",       length = 100)),
+        @AttributeOverride(name = "country",    column = @Column(name = "address_country",     length = 100)),
+        @AttributeOverride(name = "postalCode", column = @Column(name = "address_postal_code", length = 20))
+    })
+    private Address address;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
