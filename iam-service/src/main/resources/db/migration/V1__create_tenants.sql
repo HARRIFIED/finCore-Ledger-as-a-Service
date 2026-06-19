@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
 CREATE TABLE tenants (
     id         UUID        NOT NULL DEFAULT gen_random_uuid(),
     name       VARCHAR(255) NOT NULL,

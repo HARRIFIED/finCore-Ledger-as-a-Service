@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
 CREATE TABLE kyc_documents (
     id               UUID         NOT NULL DEFAULT gen_random_uuid(),
     user_id          UUID         NOT NULL,
