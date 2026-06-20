@@ -1,0 +1,28 @@
+# Version control
+.git
+.gitattributes
+.gitignore
+
+# IDE / editor
+.idea
+.vscode
+*.iml
+
+# Gradle caches and build outputs — rebuilt inside the container
+.gradle
+build/
+*/build/
+**/build/
+
+# Docs and non-build files
+**/HELP.md
+**/docs/
+*.md
+
+# Environment files — never bake secrets into the image
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db

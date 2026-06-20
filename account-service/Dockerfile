@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk-noble AS builder
 WORKDIR /workspace
 COPY gradlew .
 COPY gradle gradle
@@ -11,10 +11,9 @@ COPY build.gradle .
 COPY account-service account-service
 RUN chmod +x ./gradlew && ./gradlew account-service:bootJar -x test --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+# Distroless: no shell, no package manager, runs as uid 65532 (nonroot) by default.
+FROM gcr.io/distroless/java21-debian12:nonroot
 WORKDIR /app
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
 COPY --from=builder /workspace/account-service/build/libs/*.jar app.jar
 EXPOSE 8081
 ENTRYPOINT ["java", \

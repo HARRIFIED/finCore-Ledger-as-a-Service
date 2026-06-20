@@ -40,7 +40,7 @@ spring:
 
 grpc:
   server:
-    port: ${GRPC_SERVER_PORT:9092}
+    port: ${GRPC_SERVER_PORT:9082}
 
 jwt:
   expiry-seconds: ${JWT_EXPIRY_SECONDS:900}
