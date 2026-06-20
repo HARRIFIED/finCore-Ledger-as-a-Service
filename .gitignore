@@ -12,4 +12,7 @@ build
 
 #plan
 PLAN.md
+
+# Ignore environment variable files
 .env
+.env.*
