@@ -1,8 +1,6 @@
-# finCore — Licensed Core Ledger Engine
+# finCore — Core Ledger Engine
 
-A suite of independently deployable microservices forming a **double-entry bookkeeping engine** that fintechs license and run in their own environment — obtaining a license, operating their own instance and database, and building their product around the engine (the way banks deploy and integrate with a core platform like Finacle). Built on Java 21, Spring Boot 4, gRPC, and Apache Kafka.
-
-Harrified Tech issues licenses centrally and never hosts or accesses licensee data.
+This repo contains a suite of independently deployable microservices forming a **double-entry bookkeeping engine** that fintechs license and run in their own environment — operating their own instance and database, and building their product around the engine. Built on Java 21, Spring Boot 4, gRPC, and Apache Kafka.
 
 ---
 ## Architecture Overview
