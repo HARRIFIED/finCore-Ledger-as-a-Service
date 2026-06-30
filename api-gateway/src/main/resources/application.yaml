@@ -1,0 +1,137 @@
+# Copyright (c) 2026-present Harrified tech and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  threads:
+    virtual:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # FEDERATION POINT. The gateway validates JWT signatures against this JWKS.
+          # Default: the bundled iam-service. To federate, point this at the licensee's
+          # own IdP (e.g. https://auth.licensee.com/.well-known/jwks.json) — no code change.
+          jwk-set-uri: ${AUTH_ISSUER_JWKS_URL:http://localhost:8092/api/v1/.well-known/jwks.json}
+  cloud:
+    gateway:
+      # Prefix is spring.cloud.gateway.server.webflux.* as of the 2025.1.x (Oakwood) train.
+      server:
+        webflux:
+          default-filters:
+            # Don't leak browser cookies to internal services.
+            - RemoveRequestHeader=Cookie
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 10s
+          routes:
+            # iam-service: auth + user management + JWKS (public auth paths handled in SecurityConfig)
+            - id: iam-service
+              uri: ${IAM_SERVICE_URI:http://localhost:8092}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/kyc/**,/api/v1/.well-known/**
+
+            - id: account-service
+              uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/accounts/**
+
+            - id: ledger-core-service
+              uri: ${LEDGER_SERVICE_URI:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/ledger/**
+
+            - id: transaction-service
+              uri: ${TRANSACTION_SERVICE_URI:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/transactions/**
+
+            - id: transfer-service
+              uri: ${TRANSFER_SERVICE_URI:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/transfers/**
+
+            - id: hold-service
+              uri: ${HOLD_SERVICE_URI:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/holds/**
+
+            - id: fx-service
+              uri: ${FX_SERVICE_URI:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/fx/**
+
+            - id: scheduler-service
+              uri: ${SCHEDULER_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/jobs/**
+
+            - id: audit-service
+              uri: ${AUDIT_SERVICE_URI:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/audit/**
+
+            - id: webhook-service
+              uri: ${WEBHOOK_SERVICE_URI:http://localhost:8090}
+              predicates:
+                - Path=/api/v1/webhooks/**
+
+            - id: reporting-service
+              uri: ${REPORTING_SERVICE_URI:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/reports/**
+
+# Maps an IdP's claim vocabulary onto the gateway-injected identity headers.
+# Override per deployment when federating to an external IdP that names claims differently.
+gateway:
+  identity:
+    program-claim: ${GATEWAY_PROGRAM_CLAIM:program_id}
+    scope-claim: ${GATEWAY_SCOPE_CLAIM:scope}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_BASE_URL:http://localhost:9411}/api/v2/spans
+
+logging:
+  level:
+    com.harrified.finCore: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    com.harrified.finCore: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+management:
+  tracing:
+    sampling:
+      probability: 0.1
+logging:
+  level:
+    com.harrified.finCore: INFO

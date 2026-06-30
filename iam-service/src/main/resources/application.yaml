@@ -45,6 +45,8 @@ grpc:
 jwt:
   expiry-seconds: ${JWT_EXPIRY_SECONDS:900}
   refresh-expiry-seconds: ${JWT_REFRESH_EXPIRY_SECONDS:604800} # 7 days
+  # Issuer (iss) stamped on tokens — set to this iam-service's externally reachable base URL.
+  issuer: ${JWT_ISSUER:http://localhost:8092}
   # RSA private key in PEM format — generated on startup when blank (dev only)
   private-key: ${JWT_PRIVATE_KEY:}
   public-key: ${JWT_PUBLIC_KEY:}

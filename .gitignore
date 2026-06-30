@@ -11,7 +11,7 @@ build
 .vscode
 
 #plan
-PLAN.md
+# PLAN.md
 
 # Ignore environment variable files
 .env

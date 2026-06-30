@@ -1,23 +1,25 @@
-# finCore — Ledger-as-a-Service
+# finCore — Licensed Core Ledger Engine
 
-A suite of independently deployable microservices forming a **multi-tenant, double-entry bookkeeping engine** capable of powering fintech products at scale. Currently being built on Java 21, Spring Boot 3, gRPC, and Apache Kafka.
+A suite of independently deployable microservices forming a **double-entry bookkeeping engine** that fintechs license and run in their own environment — obtaining a license, operating their own instance and database, and building their product around the engine (the way banks deploy and integrate with a core platform like Finacle). Built on Java 21, Spring Boot 4, gRPC, and Apache Kafka.
+
+Harrified Tech issues licenses centrally and never hosts or accesses licensee data.
 
 ---
 ## Architecture Overview
 ```
-             External Clients (Mobile, Web, Partner APIs)
+        Licensee backend (integration client · mTLS + OAuth2)
                                   │
                            API Gateway :8080
-                    JWT validation via JWKS · routing
-                    Injects: X-User-Id, X-Tenant-Id, X-User-Roles
+            Validates licensee-IdP tokens via configurable JWKS · routing
+                    Injects: X-Subject, X-Program-Id, X-Scopes
                                   │
       ┌────────────┬──────────────┼──────────────┬──────────────┐
       │            │              │              │              │
   iam-service  account-svc   ledger-core    txn-svc      transfer-svc
   :8092/9092   :8081/9081    :8082/9082    :8083/9083    :8084/9084
-  (issues JWTs,
-   user/customer
-   management)
+  (optional bundled
+   IdP — licensees may
+   federate their own)
                                   │
       ┌───────────────────────────┼───────────────────────────┐
       │                           │                           │
@@ -33,19 +35,28 @@ A suite of independently deployable microservices forming a **multi-tenant, doub
                              :8091/9091
 ```
 
-### Auth Flow
+### Auth Flow (Federated)
+
+finCore validates the **licensee's own IdP tokens** — it does not own the licensee's users. The bundled `iam-service` is optional, for licensees without an existing IdP. The primary caller is the **licensee's backend**, not the end-user device.
 
 ```
-1. Client POSTs credentials  →  iam-service issues JWT
-   JWT payload: { sub: userId, tenant_id, email, roles: [...] }
+1. Licensee's backend authenticates to finCore via OAuth2 client-credentials
+   (+ mTLS). Service-to-service, not end-user-to-engine.
 
-2. All subsequent requests carry Bearer <token>  →  API Gateway validates
-   against iam-service JWKS endpoint, then injects identity headers
+2. Per-deployment config sets the trusted issuer — the licensee's own IdP
+   (JWKS URL) or the optional bundled iam-service. The API Gateway validates
+   token signatures against that JWKS, then injects identity headers.
 
-3. Downstream services read X-User-Id / X-Tenant-Id from headers
-   — they never validate JWTs themselves
-   — ownerId is never accepted from the request body
+3. Downstream services read X-Subject / X-Program-Id from headers
+   — they never validate tokens themselves
+   — ownerId comes from X-Subject, never from the request body
 ```
+
+---
+
+## Deployment Model
+
+finCore is delivered as software the **licensee runs themselves** — signed Docker images + Helm charts deployed into the licensee's own environment, backed by their own PostgreSQL, Kafka, and object storage. No data leaves the licensee's infrastructure. (License issuance and runtime enforcement are detailed in `PLAN.md`.)
 
 ---
 
@@ -60,16 +71,16 @@ The auth foundation everything else depends on.
 - [x] Root Gradle multi-module project setup
 - [x] `account-service` — domain model: entity, enums, DTOs, service interface
 - [ ] `api-contracts` — shared Protobuf definitions for all services
-- [ ] `iam-service` — user/customer registration, login, JWT issuance, JWKS endpoint, tenant management
-- [ ] `api-gateway` — Spring Cloud Gateway: JWT validation via JWKS, header propagation, routing to all services
+- [ ] `iam-service` — **optional** bundled IdP: user registration, login, JWT issuance, JWKS endpoint (licensees may federate to their own IdP instead)
+- [x] `api-gateway` — Spring Cloud Gateway: validates tokens against a **configurable** issuer JWKS (licensee IdP or bundled iam-service), injects `X-Subject` / `X-Program-Id` / `X-Scopes`, routing to all services
 
 ### Phase 2 — Account Management
 
 Completes account-service now that real auth context flows from the gateway.
 
 - [ ] `account-service` — repository, service implementation, REST controllers, gRPC server
-  - `ownerId` sourced from `X-User-Id` header (not request body)
-  - All queries scoped by `tenantId`
+  - `ownerId` sourced from `X-Subject` header (not request body)
+  - Queries optionally segmented by `X-Program-Id` (sub-program / brand)
   - Sub-account hierarchy via `parentAccountId`
 
 ### Phase 3 — The Ledger Engine
@@ -129,8 +140,8 @@ The financial core that all money-movement services post into.
 | Concern           | Choice                                       |
 |-------------------|----------------------------------------------|
 | Language          | Java 21                                      |
-| Framework         | Spring Boot 3.3.5                            |
-| Service Mesh      | Spring Cloud 2023.0.3                        |
+| Framework         | Spring Boot 4.0.6                            |
+| Service Mesh      | Spring Cloud 2025.1.2 (Oakwood)              |
 | API Gateway       | Spring Cloud Gateway                         |
 | Inter-service RPC | gRPC (net.devh grpc-spring-boot-starter)     |
 | Messaging         | Apache Kafka                                 |
