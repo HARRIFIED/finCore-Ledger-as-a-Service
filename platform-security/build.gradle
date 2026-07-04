@@ -1,0 +1,18 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+// Plain library (no Spring Boot plugin / no bootJar). Shared code every downstream
+// service uses to consume the API Gateway's injected identity headers.
+
+dependencies {
+    // Web types (HandlerMethodArgumentResolver, WebMvcConfigurer, NativeWebRequest).
+    // implementation, not api — the consuming service already brings spring-boot-starter-web.
+    implementation 'org.springframework:spring-webmvc'
+
+    // @AutoConfiguration + @ConditionalOnWebApplication so the resolver registers itself
+    // when a service adds this module (no per-service wiring).
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+}

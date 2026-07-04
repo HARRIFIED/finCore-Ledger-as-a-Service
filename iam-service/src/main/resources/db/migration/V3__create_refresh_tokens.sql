@@ -7,7 +7,7 @@
 CREATE TABLE refresh_tokens (
     id          UUID        NOT NULL DEFAULT gen_random_uuid(),
     user_id     UUID        NOT NULL,
-    token_hash  CHAR(64)    NOT NULL,
+    token_hash  VARCHAR(64) NOT NULL,
     expires_at  TIMESTAMPTZ NOT NULL,
     revoked     BOOLEAN     NOT NULL DEFAULT FALSE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),

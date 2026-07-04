@@ -18,6 +18,7 @@ plugins {
 
 rootProject.name = 'finCore'
 include 'api-contracts'
+include 'platform-security'
 include 'account-service'
 include 'iam-service'
 include 'api-gateway'

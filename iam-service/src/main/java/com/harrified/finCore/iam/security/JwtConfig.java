@@ -23,7 +23,8 @@ public class JwtConfig {
 
     @Bean
     public JwtEncoder jwtEncoder(JwtKeyProvider keyProvider) {
-        JWKSet jwkSet = keyProvider.getJwkSet();
+        // Signer needs the FULL keypair (private key) — not the public-only set.
+        JWKSet jwkSet = keyProvider.getSigningJwkSet();
         ImmutableJWKSet<SecurityContext> jwkSource = new ImmutableJWKSet<>(jwkSet);
         return new NimbusJwtEncoder(jwkSource);
     }

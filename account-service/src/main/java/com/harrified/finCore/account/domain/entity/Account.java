@@ -19,6 +19,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -71,6 +73,9 @@ public class Account {
     @Column(name = "parent_account_id") // for future puposes
     private UUID parentAccountId;
 
+    // @JdbcTypeCode(JSON) so Hibernate binds the String as jsonb, not varchar
+    // (Postgres rejects an implicit varchar -> jsonb assignment).
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
 

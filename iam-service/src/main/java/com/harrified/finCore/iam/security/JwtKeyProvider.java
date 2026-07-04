@@ -51,8 +51,15 @@ public class JwtKeyProvider {
         return rsaKey.toRSAPublicKey();
     }
 
+    // Public JWK set — safe to expose at the /jwks.json endpoint.
     public JWKSet getJwkSet() {
         return new JWKSet(rsaKey.toPublicJWK());
+    }
+
+    // Full JWK set including the private key — used ONLY by the JWT signer.
+    // Never serialise or expose this.
+    public JWKSet getSigningJwkSet() {
+        return new JWKSet(rsaKey);
     }
 
     private RSAKey loadFromPem() throws Exception {

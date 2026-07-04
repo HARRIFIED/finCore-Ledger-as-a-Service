@@ -12,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -61,6 +63,9 @@ public class KycProfile {
 
     // Tenant-specific KYC fields that don't fit the standard schema.
     // e.g. { "cac_number": "RC-123456", "tin": "1234567890" }
+    // @JdbcTypeCode(JSON) is required so Hibernate binds the String as jsonb rather
+    // than varchar (Postgres rejects an implicit varchar -> jsonb assignment).
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
 

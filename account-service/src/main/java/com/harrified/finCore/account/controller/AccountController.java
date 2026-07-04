@@ -6,14 +6,21 @@
 
 package com.harrified.finCore.account.controller;
 
+import com.harrified.finCore.platform.security.CallerContext;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
 
-    @GetMapping("/hello")
-    public String greetings() {
-        return "Hello!!!";
+    /**
+     * Echoes the identity the gateway injected. The caller is derived from the verified
+     * token's claims (X-Subject / X-Program-Id / X-Scopes) — never from the request body.
+     * Serves as a verifiable probe of the federation wiring; account ownership will be
+     * keyed off {@code caller.subject()} once CRUD lands in the Phase 2 build.
+     */
+    @GetMapping("/me")
+    public CallerContext me(CallerContext caller) {
+        return caller;
     }
 }

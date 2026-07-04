@@ -11,8 +11,10 @@ build
 .vscode
 
 #plan
-# PLAN.md
+PLAN.md
 
-# Ignore environment variable files
+# Ignore environment variable files (but keep the committed templates)
 .env
 .env.*
+!.env.example
+!**/.env.example

@@ -58,6 +58,16 @@ finCore is delivered as software the **licensee runs themselves** — signed Doc
 
 ---
 
+## Documentation
+
+In-repo docs live under [`docs/`](docs/), organized by area:
+
+- [IAM ↔ API Gateway federation flow](docs/security/iam-api-gateway-flow.md) — token issuance, JWKS validation, identity-header injection/stripping, and downstream consumption.
+
+See [`docs/README.md`](docs/README.md) for the full index and documentation conventions.
+
+---
+
 ## Roadmap
 
 Services are built in strict dependency order. Each phase produces working, tested services before the next begins.

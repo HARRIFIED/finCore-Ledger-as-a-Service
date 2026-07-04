@@ -12,11 +12,14 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 bootRun {
-    def envFile = rootProject.file('.env')
-    if (envFile.exists()) {
-        def props = new Properties()
-        envFile.withInputStream { props.load(it) }
-        environment props
+    // Load shared infra defaults from the root .env, then this module's own .env
+    // (service-specific values win). Both are git-ignored; see the .env.example files.
+    [rootProject.file('.env'), project.file('.env')].each { envFile ->
+        if (envFile.exists()) {
+            def props = new Properties()
+            envFile.withInputStream { props.load(it) }
+            environment props
+        }
     }
 }
 
