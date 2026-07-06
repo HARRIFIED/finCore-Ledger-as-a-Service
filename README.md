@@ -148,4 +148,21 @@ Current status:
 
 ## License
 
-Copyright (c) 2026 Harrified Tech. All rights reserved.
+finCore is **dual-licensed** — a free/open-source community edition and a paid commercial edition.
+
+- **Community Edition — [AGPL-3.0-only](LICENSE).** You may use, modify, and redistribute finCore
+  under the terms of the [GNU Affero General Public License v3.0](LICENSE). The copyleft is
+  deliberate and covers derivative works in full: any modified version you distribute **or run as a
+  network service** must be released under the AGPL-3.0, with its complete corresponding source made
+  available to users (AGPL §13). You may **not** re-license finCore or any derivative under different
+  or proprietary terms.
+
+- **Commercial Edition.** Organizations that cannot meet the AGPL's obligations — e.g. embedding
+  finCore in a closed-source product, or operating a modified finCore as a hosted service without
+  publishing their changes — can obtain a separate commercial license that lifts the copyleft
+  requirements. See **[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)**.
+
+Both editions are built from the same source. Contributions are accepted under the terms in
+**[CONTRIBUTING.md](CONTRIBUTING.md)**, which allow finCore to be offered under both licenses.
+
+Copyright © 2026–present Harrison Ikpefua (Harrified Tech) and contributors.

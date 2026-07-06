@@ -18,12 +18,20 @@ Status legend: ✅ done · 🟡 partial · ⬜ not started.
 
 ## Phases
 
-### Phase 0 — Platform foundations 🟡
+### Phase 0 — Platform foundations ✅ (core seams done)
 Goal: the seams every service depends on.
-- Tenant-context resolver + tenant-scoped repository layer + tenant-leading indexes (ADR-0009).
-- Transactional **outbox** scaffolding + Kafka relay (FR-25).
-- Config/product/CoA scaffolding; observability baseline (✅ tracing).
-- _Done:_ gateway ✅, platform-security ✅. _Remaining:_ tenant seam, outbox, config scaffolding.
+- ✅ **Tenant seam** — `platform-tenancy` module: `TenantContext` + `TenantContextFilter`
+  (from `X-Program-Id`) + Hibernate `CurrentTenantIdentifierResolver` + auto-config
+  (ADR-0009). Unit-tested. Services opt in by adding the dep and annotating their tenant
+  column `@TenantId`; escalation to schema/DB-per-tenant is a Hibernate-strategy swap.
+- ✅ **Outbox** — `platform-outbox` module: `OutboxAppender` (JDBC, joins the caller's
+  transaction, cross-tenant-safe) + polling `OutboxRelay` + a dedicated String-serializing
+  KafkaTemplate + auto-config; reference `outbox.sql` shipped for per-service migration.
+  Unit-tested. (FR-25)
+- ✅ gateway, ✅ platform-security, ✅ observability baseline (tracing).
+- ⬜ Config/product/CoA scaffolding — folds into Phase 3 (accounts + CoA), where it's used.
+- _Build infra:_ ✅ added the JUnit Platform launcher to the root test classpath (Gradle 9
+  no longer adds it automatically) — unblocks `test` tasks across all modules.
 
 ### Phase 1 — ledger-core (the spine) ⬜  → FR-2,3,7,16,17,19,20
 The highest-value, highest-risk piece; build it first to de-risk. Small bits:

@@ -1,0 +1,19 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+// Plain library (no Spring Boot plugin). Shared multi-tenancy seam every service uses:
+// resolves the tenant from the gateway's X-Program-Id and feeds Hibernate's
+// discriminator (row-level) multi-tenancy. See ADR-0009.
+
+dependencies {
+    implementation 'org.springframework:spring-webmvc'                 // OncePerRequestFilter
+    implementation 'org.springframework.boot:spring-boot-autoconfigure' // @AutoConfiguration + conditions
+
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'                  // servlet types (consumer provides)
+    compileOnly 'org.hibernate.orm:hibernate-core'                     // CurrentTenantIdentifierResolver
+
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
+}

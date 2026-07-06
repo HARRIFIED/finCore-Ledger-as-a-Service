@@ -1,0 +1,21 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+// Plain library. Transactional-outbox scaffolding: producers append events in their own
+// DB transaction (via JdbcTemplate, so it joins the caller's transaction and is NOT
+// tenant-filtered); a polling relay publishes unpublished rows to Kafka (FR-25).
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+
+    compileOnly 'org.springframework:spring-jdbc'                       // JdbcTemplate
+    compileOnly 'org.springframework.kafka:spring-kafka'               // KafkaTemplate / producer factory
+    compileOnly 'com.fasterxml.jackson.core:jackson-databind'         // ObjectMapper (payload → JSON)
+
+    testImplementation 'org.springframework:spring-jdbc'
+    testImplementation 'org.springframework.kafka:spring-kafka'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+}

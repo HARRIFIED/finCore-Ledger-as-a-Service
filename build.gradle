@@ -53,6 +53,9 @@ subprojects {
     dependencies {
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.testcontainers:junit-jupiter'
+        // Gradle 9 no longer puts the JUnit Platform launcher on the test runtime
+        // classpath automatically — add it explicitly (version managed by the Boot BOM).
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
     tasks.named('test') {
