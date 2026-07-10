@@ -8,6 +8,7 @@ package com.harrified.finCore.platform.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.ObjectProvider;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -36,8 +37,12 @@ public class OutboxAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public OutboxAppender outboxAppender(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
-        return new OutboxAppender(jdbcTemplate, objectMapper);
+    public OutboxAppender outboxAppender(JdbcTemplate jdbcTemplate, ObjectProvider<ObjectMapper> objectMapper) {
+        // Use the app's configured ObjectMapper if it exposes one; otherwise build a
+        // self-contained one (registering any JavaTime/etc. modules on the classpath), so
+        // the outbox never hard-requires the consumer to publish an ObjectMapper bean.
+        ObjectMapper mapper = objectMapper.getIfAvailable(() -> new ObjectMapper().findAndRegisterModules());
+        return new OutboxAppender(jdbcTemplate, mapper);
     }
 
     /** Own producer: keys and values are Strings (payload is already serialized JSON). */

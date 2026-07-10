@@ -1,0 +1,55 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+package com.harrified.finCore.ledger.controller;
+
+import com.harrified.finCore.ledger.domain.PostingLine;
+import com.harrified.finCore.ledger.domain.entity.JournalEntry;
+import com.harrified.finCore.ledger.domain.entity.LedgerAccount;
+import com.harrified.finCore.ledger.dto.CreateLedgerAccountRequest;
+import com.harrified.finCore.ledger.dto.LedgerAccountResponse;
+import com.harrified.finCore.ledger.dto.PostEntryRequest;
+import com.harrified.finCore.ledger.dto.PostEntryResponse;
+import com.harrified.finCore.ledger.service.LedgerService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/ledger")
+public class LedgerController {
+
+    private final LedgerService ledgerService;
+
+    public LedgerController(LedgerService ledgerService) {
+        this.ledgerService = ledgerService;
+    }
+
+    @PostMapping("/accounts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public LedgerAccountResponse createAccount(@Valid @RequestBody CreateLedgerAccountRequest request) {
+        LedgerAccount account = ledgerService.createAccount(request.reference(), request.coaType(), request.currency());
+        return new LedgerAccountResponse(account.getId(), account.getReference(), account.getCoaType(),
+                account.getCurrency(), account.getStatus());
+    }
+
+    @PostMapping("/entries")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PostEntryResponse postEntry(@Valid @RequestBody PostEntryRequest request) {
+        List<PostingLine> lines = request.postings().stream()
+                .map(p -> new PostingLine(p.ledgerAccountId(), p.direction(), p.amountMinor(), p.currency()))
+                .toList();
+        JournalEntry entry = ledgerService.postEntry(
+                request.idempotencyKey(), request.valueDate(), lines, request.correlationId(), request.source());
+        return new PostEntryResponse(entry.getId(), entry.getStatus().name());
+    }
+}

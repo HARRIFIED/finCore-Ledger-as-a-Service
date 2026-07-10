@@ -33,15 +33,24 @@ Goal: the seams every service depends on.
 - _Build infra:_ ✅ added the JUnit Platform launcher to the root test classpath (Gradle 9
   no longer adds it automatically) — unblocks `test` tasks across all modules.
 
-### Phase 1 — ledger-core (the spine) ⬜  → FR-2,3,7,16,17,19,20
+### Phase 1 — ledger-core (the spine) 🟡  → FR-2,3,7,16,17,19,20
 The highest-value, highest-risk piece; build it first to de-risk. Small bits:
-1. Ledger accounts (create, from CoA type/currency).
-2. Post journal entry + **double-entry invariant** (per-currency balance).
-3. Balance read (posted/available/held/pending).
-4. **Snapshots** (every-N + timer) and fold.
-5. **Point-in-time** by value_date.
-6. **Idempotency** keys; **reversals**.
-7. Emit `ledger.entry.*` via outbox.
+1. ✅ Ledger accounts (create, from CoA type/currency).
+2. ✅ Post journal entry + **double-entry invariant** (per-currency balance) — unit-tested.
+3. ⬜ Balance read (posted/available/held/pending).
+4. ⬜ **Snapshots** (every-N + timer) and fold.
+5. ⬜ **Point-in-time** by value_date.
+6. ✅ **Idempotency** keys (per tenant). ⬜ **reversals**.
+7. ✅ Emit `ledger.entry.posted` via outbox.
+
+_Bit 1 delivered + verified (2026-07-10):_ `ledger-core-service` module + `LedgerAccount`/
+`JournalEntry`/`Posting` entities (`@TenantId` seam), `DoubleEntryValidator`, `LedgerService`
+(create account, post entry with invariant + idempotency + outbox), REST controller,
+Flyway V1/V2 (+ `ledger_core_db`). Invariant unit-tested (6/6). **Live smoke test passed:**
+booted clean (`ddl-auto: validate` accepted the schema), balanced post → `201`, unbalanced
+→ `422`, idempotent replay → same entry, and DB showed `2 accounts / 1 entry / 2 postings /
+1 outbox` all tagged `tenant_id` auto-set from `X-Program-Id`. (Fix along the way:
+`platform-outbox` no longer hard-requires the consumer to expose an `ObjectMapper` bean.)
 
 ### Phase 2 — party-service (CIF) ⬜  → §2.2 (PTY-1..6)
 Parallelizable with Phase 1. Party (INDIVIDUAL/ORG), unified verification (KYC/KYB) + tiers,
