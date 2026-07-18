@@ -16,4 +16,7 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, UUID
 
     // Tenant-scoped by @TenantId, so idempotency keys are unique per tenant (FR-16).
     Optional<JournalEntry> findByIdempotencyKey(String idempotencyKey);
+
+    // The reversing entry for a given original, if one exists (reversal is idempotent).
+    Optional<JournalEntry> findByReversalOf(UUID reversalOf);
 }
