@@ -60,6 +60,13 @@ public class LedgerController {
         return new PostEntryResponse(entry.getId(), entry.getStatus().name());
     }
 
+    @PostMapping("/entries/{id}/reverse")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PostEntryResponse reverse(@PathVariable UUID id) {
+        JournalEntry reversal = ledgerService.reverseEntry(id);
+        return new PostEntryResponse(reversal.getId(), reversal.getStatus().name());
+    }
+
     /**
      * Current balance, or the point-in-time posted balance as of a value date when
      * {@code asOf} is supplied (e.g. {@code ?asOf=2026-07-01}).

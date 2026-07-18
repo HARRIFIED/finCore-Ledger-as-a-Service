@@ -13,6 +13,7 @@ import com.harrified.finCore.ledger.domain.entity.JournalEntry;
 import com.harrified.finCore.ledger.domain.entity.LedgerAccount;
 import com.harrified.finCore.ledger.domain.entity.Posting;
 import com.harrified.finCore.ledger.domain.enums.CoaType;
+import com.harrified.finCore.ledger.domain.enums.Direction;
 import com.harrified.finCore.ledger.domain.enums.EntryStatus;
 import com.harrified.finCore.ledger.domain.enums.LedgerAccountStatus;
 import com.harrified.finCore.ledger.domain.enums.NormalSide;
@@ -172,6 +173,58 @@ public class LedgerService {
         payload.put("valueDate", valueDate.toString());
         payload.put("postingCount", lines.size());
         outbox.append(TenantContext.require(), TOPIC, saved.getId().toString(), TOPIC, payload);
+
+        return saved;
+    }
+
+    /**
+     * Reverse a posted entry (FR-7) by appending a NEW entry with debit/credit swapped and
+     * {@code reversalOf} set — the original is never mutated (append-only, FR-17). The reversal
+     * is value-dated today, so the current balance nets to zero while point-in-time before the
+     * reversal still shows the original (history is preserved). Idempotent: reversing an entry
+     * that already has a reversal returns that reversal.
+     */
+    @Transactional
+    public JournalEntry reverseEntry(UUID originalId) {
+        JournalEntry original = entries.findById(originalId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Unknown journal entry " + originalId));
+
+        Optional<JournalEntry> existingReversal = entries.findByReversalOf(originalId);
+        if (existingReversal.isPresent()) {
+            return existingReversal.get();
+        }
+
+        if (original.getStatus() != EntryStatus.POSTED) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Only POSTED entries can be reversed; " + originalId + " is " + original.getStatus());
+        }
+
+        JournalEntry reversal = JournalEntry.builder()
+                .idempotencyKey("reversal:" + originalId)
+                .status(EntryStatus.POSTED)
+                .bookingTime(Instant.now())
+                .valueDate(LocalDate.now())
+                .correlationId(original.getCorrelationId())
+                .source("reversal")
+                .reversalOf(originalId)
+                .build();
+        for (Posting leg : original.getPostings()) {
+            reversal.addPosting(Posting.builder()
+                    .ledgerAccountId(leg.getLedgerAccountId())
+                    .direction(leg.getDirection() == Direction.DEBIT ? Direction.CREDIT : Direction.DEBIT)
+                    .amountMinor(leg.getAmountMinor())
+                    .currency(leg.getCurrency())
+                    .build());
+        }
+
+        JournalEntry saved = entries.save(reversal);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("reversalEntryId", saved.getId().toString());
+        payload.put("originalEntryId", originalId.toString());
+        outbox.append(TenantContext.require(), "ledger.entry.reversed", saved.getId().toString(),
+                "ledger.entry.reversed", payload);
 
         return saved;
     }

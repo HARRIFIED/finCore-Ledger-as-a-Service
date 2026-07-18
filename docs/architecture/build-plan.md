@@ -50,7 +50,9 @@ The highest-value, highest-risk piece; build it first to de-risk. Small bits:
    value-dated fold, not the booking-seq snapshots) + `getBalanceAsOf` +
    `GET /accounts/{id}/balance?asOf=YYYY-MM-DD`. Live-verified across value dates (inclusive
    boundary; pre-entry dates read 0). (FR-20)
-6. ✅ **Idempotency** keys (per tenant). ⬜ **reversals**.
+6. ✅ **Idempotency** keys (per tenant). ✅ **Reversals** — `POST /entries/{id}/reverse` appends a
+   swapped-leg entry (`reversal_of`, original immutable), idempotent, emits `ledger.entry.reversed`.
+   Live-verified: nets to zero, idempotent replay, PIT before reversal preserves the original.
 7. ✅ Emit `ledger.entry.posted` via outbox.
 
 _Bit 1 delivered + verified (2026-07-10):_ `ledger-core-service` module + `LedgerAccount`/
