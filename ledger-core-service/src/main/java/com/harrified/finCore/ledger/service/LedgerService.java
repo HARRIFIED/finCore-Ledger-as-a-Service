@@ -6,6 +6,7 @@
 
 package com.harrified.finCore.ledger.service;
 
+import com.harrified.finCore.ledger.domain.Balances;
 import com.harrified.finCore.ledger.domain.DoubleEntryValidator;
 import com.harrified.finCore.ledger.domain.PostingLine;
 import com.harrified.finCore.ledger.domain.entity.JournalEntry;
@@ -14,8 +15,13 @@ import com.harrified.finCore.ledger.domain.entity.Posting;
 import com.harrified.finCore.ledger.domain.enums.CoaType;
 import com.harrified.finCore.ledger.domain.enums.EntryStatus;
 import com.harrified.finCore.ledger.domain.enums.LedgerAccountStatus;
+import com.harrified.finCore.ledger.domain.enums.NormalSide;
+import com.harrified.finCore.ledger.dto.BalanceResponse;
+import com.harrified.finCore.ledger.repository.DebitCreditSum;
 import com.harrified.finCore.ledger.repository.JournalEntryRepository;
 import com.harrified.finCore.ledger.repository.LedgerAccountRepository;
+import com.harrified.finCore.ledger.repository.PostingRepository;
+import com.harrified.finCore.ledger.snapshot.SnapshotStore;
 import com.harrified.finCore.platform.outbox.OutboxAppender;
 import com.harrified.finCore.platform.tenancy.TenantContext;
 import org.springframework.http.HttpStatus;
@@ -45,11 +51,16 @@ public class LedgerService {
 
     private final LedgerAccountRepository accounts;
     private final JournalEntryRepository entries;
+    private final PostingRepository postings;
+    private final SnapshotStore snapshots;
     private final OutboxAppender outbox;
 
-    public LedgerService(LedgerAccountRepository accounts, JournalEntryRepository entries, OutboxAppender outbox) {
+    public LedgerService(LedgerAccountRepository accounts, JournalEntryRepository entries,
+                         PostingRepository postings, SnapshotStore snapshots, OutboxAppender outbox) {
         this.accounts = accounts;
         this.entries = entries;
+        this.postings = postings;
+        this.snapshots = snapshots;
         this.outbox = outbox;
     }
 
@@ -62,6 +73,65 @@ public class LedgerService {
                 .status(LedgerAccountStatus.ACTIVE)
                 .build();
         return accounts.save(account);
+    }
+
+    /**
+     * Current balances for an account (FR-3), derived by folding its postings (ADR-0005),
+     * normalized by the account's CoA normal side. {@code held}/{@code pending} are 0 until
+     * holds (Phase 4) and external settlement (Phase 7).
+     */
+    @Transactional(readOnly = true)
+    public BalanceResponse getBalance(UUID accountId) {
+        LedgerAccount account = accounts.findById(accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Unknown ledger account " + accountId));
+
+        String tenantId = TenantContext.require();
+        NormalSide side = account.getCoaType().normalSide();
+
+        // Posted balance = snapshot ⊕ fold of postings newer than the snapshot (ADR-0005).
+        SnapshotStore.SnapshotRow snapshot = snapshots.find(accountId, tenantId).orElse(null);
+        long baseSeq = snapshot != null ? snapshot.asOfSeq() : 0L;
+        long baseDebits = snapshot != null ? snapshot.debits() : 0L;
+        long baseCredits = snapshot != null ? snapshot.credits() : 0L;
+
+        DebitCreditSum postedDelta = postings.fold(accountId, tenantId, EntryStatus.POSTED.name(), baseSeq);
+        long posted = Balances.signed(side,
+                baseDebits + nz(postedDelta.getDebits()),
+                baseCredits + nz(postedDelta.getCredits()));
+
+        // Pending (in-flight, unsettled) is small — folded in full, no snapshot.
+        DebitCreditSum pendingFold = postings.fold(accountId, tenantId, EntryStatus.PENDING.name(), 0L);
+        long pending = Balances.signed(side, nz(pendingFold.getDebits()), nz(pendingFold.getCredits()));
+
+        long held = 0L; // active holds fold in here once hold-service lands (Phase 4)
+        long available = posted - held;
+
+        return new BalanceResponse(accountId, account.getCurrency(), posted, available, held, pending);
+    }
+
+    /**
+     * Point-in-time posted balance as of a value date (FR-20): folds POSTED postings with
+     * {@code value_date <= asOf}. Reflects the booked balance effective on that date; holds
+     * and pending are current-state concepts (Phase 4/7) and are reported as 0 here.
+     */
+    @Transactional(readOnly = true)
+    public BalanceResponse getBalanceAsOf(UUID accountId, LocalDate asOf) {
+        LedgerAccount account = accounts.findById(accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Unknown ledger account " + accountId));
+
+        String tenantId = TenantContext.require();
+        NormalSide side = account.getCoaType().normalSide();
+
+        DebitCreditSum fold = postings.foldAsOf(accountId, tenantId, EntryStatus.POSTED.name(), asOf);
+        long posted = Balances.signed(side, nz(fold.getDebits()), nz(fold.getCredits()));
+
+        return new BalanceResponse(accountId, account.getCurrency(), posted, posted, 0L, 0L);
+    }
+
+    private static long nz(Long value) {
+        return value == null ? 0L : value;
     }
 
     @Transactional

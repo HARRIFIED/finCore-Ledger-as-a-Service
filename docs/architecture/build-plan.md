@@ -37,9 +37,19 @@ Goal: the seams every service depends on.
 The highest-value, highest-risk piece; build it first to de-risk. Small bits:
 1. ✅ Ledger accounts (create, from CoA type/currency).
 2. ✅ Post journal entry + **double-entry invariant** (per-currency balance) — unit-tested.
-3. ⬜ Balance read (posted/available/held/pending).
-4. ⬜ **Snapshots** (every-N + timer) and fold.
-5. ⬜ **Point-in-time** by value_date.
+3. ✅ Balance read (posted/available/held/pending) — `Balances.signed()` (normalize by normal
+   side, unit-tested), `PostingRepository.fold()` (native, explicit tenant filter),
+   `GET /accounts/{id}/balance`. **Live-verified:** debit/credit math correct (credit-normal
+   wallet debited 50000 → posted −50000, counterparty +50000) and cross-tenant read → 404.
+4. ✅ **Snapshots** — global `posting.seq` (DB sequence, unmapped) + `balance_snapshot`
+   table (V3); `SnapshotStore` (lag-safe advancing UPSERT — gap-free high-water mark) +
+   scheduled `SnapshotWriter`; `getBalance` reads `snapshot ⊕ fold(seq > as_of_seq)`.
+   **Live-verified:** writer advanced snapshots, and balances stayed exact with no snapshot,
+   with snapshot (== full fold), and with snapshot + new delta.
+5. ✅ **Point-in-time** by value_date — `PostingRepository.foldAsOf` (value_date <= asOf, full
+   value-dated fold, not the booking-seq snapshots) + `getBalanceAsOf` +
+   `GET /accounts/{id}/balance?asOf=YYYY-MM-DD`. Live-verified across value dates (inclusive
+   boundary; pre-entry dates read 0). (FR-20)
 6. ✅ **Idempotency** keys (per tenant). ⬜ **reversals**.
 7. ✅ Emit `ledger.entry.posted` via outbox.
 
