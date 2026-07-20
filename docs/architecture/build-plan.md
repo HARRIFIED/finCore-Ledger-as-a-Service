@@ -73,8 +73,15 @@ _Bit 1 delivered + verified (2026-07-18):_ `party-service` module (`:8093`, `par
 type↔profile validation, `party.created` outbox event, Flyway V1 (party) + V2 (outbox).
 **Live smoke test passed:** created individual + organization parties, GET both, type/profile
 mismatch → `422`, and DB showed `2` parties (`tenant_id` auto-set) + `2` `party.created` outbox
-rows. Next bits: verification (KYC/KYB) + tiers, `PartyMembership` + authorization API,
-`PartyRelationship`.
+rows.
+
+_Bit 3 delivered + verified (2026-07-18):_ `PartyMembership` (subject→party→role, `@TenantId`) +
+authorization (ADR-0006): `grant` (idempotent per party+subject+role, emits
+`party.membership.granted`), `GET /parties/{id}/access?subject=` (allowed + roles),
+list-for-party, list-for-subject; V3 migration. **Live smoke test passed:** granted OWNER+VIEWER
+to one subject and INITIATOR to another, idempotent re-grant, `access` → allowed+roles for a
+member / denied for a non-member, `3` memberships + `3` granted events in DB (tenant-scoped).
+Remaining party bits: verification (KYC/KYB) + tiers, `PartyRelationship` (directors/UBOs).
 
 ### Phase 3 — accounts + CoA/products ⬜  → FR-1,18,24  (needs 1 & 2)
 account-service CRUD **keyed on `partyId`**; template-seeded CoA + standard internal accounts
