@@ -8,3 +8,4 @@
 CREATE DATABASE identity_db;
 CREATE DATABASE account_db;
 CREATE DATABASE ledger_core_db;
+CREATE DATABASE party_db;

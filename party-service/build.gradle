@@ -1,0 +1,55 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+plugins {
+    id 'org.springframework.boot'
+    id 'java'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+bootRun {
+    // Load shared infra defaults from the root .env, then this module's own .env
+    // (service-specific values win). Both are git-ignored; see the .env.example files.
+    [rootProject.file('.env'), project.file('.env')].each { envFile ->
+        if (envFile.exists()) {
+            def props = new Properties()
+            envFile.withInputStream { props.load(it) }
+            environment props
+        }
+    }
+}
+
+dependencies {
+    // Shared platform modules: gateway identity, tenancy seam, transactional outbox.
+    implementation project(':platform-security')
+    implementation project(':platform-tenancy')
+    implementation project(':platform-outbox')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    // Boot 4 modularized auto-config: the Flyway starter (not bare flyway-core) is required.
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // The outbox relay publishes to Kafka (auto-configured by platform-outbox).
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:junit-jupiter'
+}

@@ -64,9 +64,17 @@ booted clean (`ddl-auto: validate` accepted the schema), balanced post → `201`
 1 outbox` all tagged `tenant_id` auto-set from `X-Program-Id`. (Fix along the way:
 `platform-outbox` no longer hard-requires the consumer to expose an `ObjectMapper` bean.)
 
-### Phase 2 — party-service (CIF) ⬜  → §2.2 (PTY-1..6)
+### Phase 2 — party-service (CIF) 🟡  → §2.2 (PTY-1..6)
 Parallelizable with Phase 1. Party (INDIVIDUAL/ORG), unified verification (KYC/KYB) + tiers,
 `PartyMembership` (+ authorization API), `PartyRelationship`. **Migrate KYC out of iam-service.**
+
+_Bit 1 delivered + verified (2026-07-18):_ `party-service` module (`:8093`, `party_db`) +
+`Party` aggregate (single-table, INDIVIDUAL + ORGANIZATION, `@TenantId`), create/get REST,
+type↔profile validation, `party.created` outbox event, Flyway V1 (party) + V2 (outbox).
+**Live smoke test passed:** created individual + organization parties, GET both, type/profile
+mismatch → `422`, and DB showed `2` parties (`tenant_id` auto-set) + `2` `party.created` outbox
+rows. Next bits: verification (KYC/KYB) + tiers, `PartyMembership` + authorization API,
+`PartyRelationship`.
 
 ### Phase 3 — accounts + CoA/products ⬜  → FR-1,18,24  (needs 1 & 2)
 account-service CRUD **keyed on `partyId`**; template-seeded CoA + standard internal accounts
