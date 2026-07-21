@@ -82,6 +82,8 @@ All committed docs live under [`docs/`](docs/) — see the [index](docs/README.m
 - [Service interaction map](docs/architecture/service-interaction-map.md) — sync calls + event/outbox topology.
 - [Decisions (ADRs)](docs/architecture/decisions/) — significant, hard-to-reverse choices with rationale.
 
+**Feature flows** ([`docs/features/`](docs/features/)): end-to-end walkthroughs of how the services work together — e.g. [Opening an account](docs/features/opening-an-account.md).
+
 **Security**: [IAM ↔ API Gateway federation flow](docs/security/iam-api-gateway-flow.md).
 
 ---
@@ -95,11 +97,13 @@ The phased, incremental build sequence is maintained in
 Current status:
 
 - ✅ **api-gateway** — federated JWT validation, identity-header inject/strip, routing.
-- ✅ **platform-security** — shared `CallerContext` + auto-config for downstream identity.
+- ✅ **platform-security / -tenancy / -outbox** — shared identity, row-level tenancy seam, transactional outbox.
+- ✅ **ledger-core** — double-entry posting + invariant, balances, snapshots, point-in-time, reversals, events.
+- ✅ **party-service** — CIF: parties (retail + corporate) + memberships & authorization.
+- 🟡 **account-service** — open-account works (authorize via party → create ledger account, keyed on `partyId`); lifecycle/CoA pending.
 - 🟡 **iam-service** — optional bundled IdP (register/login/JWT/JWKS); KYC to move to party-service.
-- 🟡 **account-service** — skeleton + `/me`; CRUD/persistence pending.
 
-**Next:** Phase 0 foundations (tenant-context seam + transactional outbox) → Phase 1 `ledger-core`.
+**Next:** finish party (KYC/KYB), flesh out account-service (CoA/products, lifecycle), or Phase 4 money movement — see the [build plan](docs/architecture/build-plan.md).
 
 ---
 

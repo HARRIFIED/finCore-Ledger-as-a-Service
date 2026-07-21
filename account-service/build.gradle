@@ -24,8 +24,13 @@ bootRun {
 }
 
 dependencies {
-    // Shared gateway-identity consumption (CallerContext + resolver auto-config).
+    // Shared platform modules: gateway identity, tenancy seam, transactional outbox.
     implementation project(':platform-security')
+    implementation project(':platform-tenancy')
+    implementation project(':platform-outbox')
+
+    // Internal gRPC surface (ADR-0010) — proto contracts + gRPC client (net.devh, below).
+    implementation project(':api-contracts')
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springframework.boot:spring-boot-starter-web'

@@ -10,6 +10,7 @@ the repo.
 docs/
 ├── README.md              ← this index
 ├── architecture/          ← cross-cutting architecture & platform decisions
+├── features/              ← end-to-end flow walkthroughs (narrative, "how it all works together")
 ├── security/              ← authentication, federation, licensing
 │   └── iam-api-gateway-flow.md
 └── services/              ← per-service references (one file per service)
@@ -36,4 +37,6 @@ docs/
 | Architecture | [Service interaction map](architecture/service-interaction-map.md) | Sync calls + event/outbox topology + external settlement path |
 | Architecture | [Build plan](architecture/build-plan.md) | Phased, incremental build sequence mapped to requirements, with status |
 | Architecture | [Decisions (ADRs)](architecture/decisions/) | Significant, hard-to-reverse decisions with rationale |
+| Features | [Feature flows](features/) | Narrative end-to-end walkthroughs of working flows (how services cooperate; how to integrate) |
+| Features | [Opening an account](features/opening-an-account.md) | Federated auth → party authorization → ledger account → persisted account, across four services |
 | Security | [IAM ↔ API Gateway federation flow](security/iam-api-gateway-flow.md) | How auth flows client → gateway → service: token issuance, JWKS validation, identity-header injection & stripping, and downstream consumption |
