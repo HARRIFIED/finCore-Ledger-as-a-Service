@@ -1,0 +1,75 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+syntax = "proto3";
+
+package fincore.ledger.v1;
+
+option java_package = "com.harrified.finCore.grpc.ledger";
+option java_outer_classname = "LedgerProto";
+option java_multiple_files = true;
+
+// Internal gRPC service — called by other finCore services (account, transfer, hold, …).
+// The tenant travels in gRPC metadata (x-program-id), not in these messages (ADR-0009/0010).
+service LedgerService {
+  // Create the ledger account backing a customer account (account-service).
+  rpc CreateLedgerAccount(CreateLedgerAccountRequest) returns (LedgerAccount);
+
+  // Post a balanced double-entry journal entry (transfer/hold/scheduler). Idempotent.
+  rpc PostJournalEntry(PostJournalEntryRequest) returns (JournalEntry);
+
+  // Current balances for a ledger account.
+  rpc GetBalance(GetBalanceRequest) returns (Balance);
+}
+
+// ─── Messages ────────────────────────────────────────────────────────────────
+
+message CreateLedgerAccountRequest {
+  string reference = 1;
+  string coa_type  = 2; // ASSET | LIABILITY | EQUITY | INCOME | EXPENSE
+  string currency  = 3; // ISO 4217
+}
+
+message LedgerAccount {
+  string id        = 1;
+  string reference = 2;
+  string coa_type  = 3;
+  string currency  = 4;
+  string status    = 5; // ACTIVE | FROZEN | CLOSED
+}
+
+message PostJournalEntryRequest {
+  string idempotency_key    = 1;
+  string value_date         = 2; // ISO date, e.g. 2026-07-21
+  repeated PostingLine postings = 3;
+  string correlation_id     = 4;
+  string source             = 5;
+}
+
+message PostingLine {
+  string ledger_account_id = 1;
+  string direction         = 2; // DEBIT | CREDIT
+  int64  amount_minor      = 3; // positive, currency minor units
+  string currency          = 4;
+}
+
+message JournalEntry {
+  string id     = 1;
+  string status = 2; // POSTED | PENDING | REVERSED
+}
+
+message GetBalanceRequest {
+  string ledger_account_id = 1;
+}
+
+message Balance {
+  string ledger_account_id = 1;
+  string currency          = 2;
+  int64  posted            = 3;
+  int64  available         = 4;
+  int64  held              = 5;
+  int64  pending           = 6;
+}

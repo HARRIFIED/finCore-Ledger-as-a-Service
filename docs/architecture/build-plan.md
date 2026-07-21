@@ -83,10 +83,18 @@ to one subject and INITIATOR to another, idempotent re-grant, `access` → allow
 member / denied for a non-member, `3` memberships + `3` granted events in DB (tenant-scoped).
 Remaining party bits: verification (KYC/KYB) + tiers, `PartyRelationship` (directors/UBOs).
 
-### Phase 3 — accounts + CoA/products ⬜  → FR-1,18,24  (needs 1 & 2)
+### Phase 3 — accounts + CoA/products 🟡  → FR-1,18,24  (needs 1 & 2)
 account-service CRUD **keyed on `partyId`**; template-seeded CoA + standard internal accounts
 (ADR-0008); product definitions with posting rules; open-account creates a ledger account.
 Replaces the `ownerId = X-Subject` placeholder.
+
+_Open-account integration delivered + verified (2026-07-21):_ `POST /api/v1/accounts` authorizes
+the caller against the owning party (party-service `access`, OWNER/ADMIN only), creates the backing
+ledger account (ledger-core), persists the `Account` keyed on `partyId` + `ledgerAccountId`
+(placeholder gone), emits `account.opened`. First **inter-service HTTP** wiring (`RestClient`
+clients forwarding `X-Program-Id`). **Live 3-service E2E passed:** authorized open → ledger account
+exists (balance 0); non-member and VIEWER → `403`; account row + event in DB, tenant-scoped.
+Remaining: CoA/product definitions, account update/freeze/close/list, gRPC.
 
 ### Phase 4 — internal money movement ⬜  → FR-5(internal),6,7,21  (needs 1 & 3)
 transfer-service (internal transfers), hold-service (place/capture/release/expire → `held`),

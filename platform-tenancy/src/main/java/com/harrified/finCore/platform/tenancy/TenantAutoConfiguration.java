@@ -6,6 +6,8 @@
 
 package com.harrified.finCore.platform.tenancy;
 
+import net.devh.boot.grpc.client.interceptor.GrpcGlobalClientInterceptor;
+import net.devh.boot.grpc.server.interceptor.GrpcGlobalServerInterceptor;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -41,6 +43,24 @@ public class TenantAutoConfiguration {
         @ConditionalOnMissingBean(CurrentTenantIdentifierResolver.class)
         CurrentTenantIdentifierResolver<String> finCoreTenantIdentifierResolver() {
             return new FinCoreTenantIdentifierResolver();
+        }
+    }
+
+    /** gRPC services get the tenant propagated over metadata (both server + client sides). */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "net.devh.boot.grpc.server.interceptor.GrpcGlobalServerInterceptor")
+    static class GrpcTenancyConfiguration {
+
+        @Bean
+        @GrpcGlobalServerInterceptor
+        GrpcTenantServerInterceptor grpcTenantServerInterceptor() {
+            return new GrpcTenantServerInterceptor();
+        }
+
+        @Bean
+        @GrpcGlobalClientInterceptor
+        GrpcTenantClientInterceptor grpcTenantClientInterceptor() {
+            return new GrpcTenantClientInterceptor();
         }
     }
 }

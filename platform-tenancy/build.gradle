@@ -14,6 +14,9 @@ dependencies {
 
     compileOnly 'jakarta.servlet:jakarta.servlet-api'                  // servlet types (consumer provides)
     compileOnly 'org.hibernate.orm:hibernate-core'                     // CurrentTenantIdentifierResolver
+    // gRPC tenant propagation (server + client interceptors). io.grpc comes transitively;
+    // net.devh provides the @GrpcGlobal*Interceptor auto-registration. Consumers provide these.
+    compileOnly 'net.devh:grpc-spring-boot-starter:3.1.0.RELEASE'
 
     testImplementation 'jakarta.servlet:jakarta.servlet-api'
 }

@@ -5,6 +5,12 @@
 server:
   port: ${SERVER_PORT:8082}
 
+# Internal gRPC surface (ADR-0010). REST stays at 8082 for the gateway edge / actuator;
+# service-to-service traffic comes in here.
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9082}
+
 spring:
   application:
     name: ledger-core-service

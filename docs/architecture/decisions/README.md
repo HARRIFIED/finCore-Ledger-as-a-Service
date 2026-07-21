@@ -24,4 +24,5 @@ ADR that supersedes the old one (and mark the old one `Superseded by NNNN`).
 | [0007](0007-fx-rates-and-conversion.md) | FX rates and conversion (internal table + quotes, configurable spread) | Accepted |
 | [0008](0008-chart-of-accounts-template-seeded.md) | Template-seeded Chart of Accounts per tenant | Accepted |
 | [0009](0009-tenancy-isolation-row-level.md) | Row-level tenant isolation with an escalation seam | Accepted |
+| [0010](0010-grpc-for-internal-service-calls.md) | gRPC for all internal service-to-service calls | Accepted |
 | [0010](0010-agpl-dual-licensing.md) | AGPL-3.0 community edition with a commercial dual license | Accepted |

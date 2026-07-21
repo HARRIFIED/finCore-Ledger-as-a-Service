@@ -6,47 +6,56 @@
 
 package com.harrified.finCore.account.domain.entity;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.harrified.finCore.account.domain.enums.AccountCurrency;
 import com.harrified.finCore.account.domain.enums.AccountStatus;
 import com.harrified.finCore.account.domain.enums.AccountType;
-
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.TenantId;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
+/**
+ * A customer account (product/wallet). Owned by a {@code partyId} (the CIF party, ADR-0006)
+ * and backed by a ledger account in ledger-core ({@code ledgerAccountId}). {@code tenantId}
+ * is Hibernate's {@link TenantId} discriminator (row-level tenancy, ADR-0009).
+ */
 @Entity
 @Table(name = "accounts")
-@EntityListeners(AuditingEntityListener.class)
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Account {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name="id", nullable=false, updatable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "accountNumber", nullable = false, unique = true, length = 50)
+    @TenantId
+    @Column(name = "tenant_id", length = 100, nullable = false)
+    private String tenantId;
+
+    @Column(name = "account_number", nullable = false, length = 50)
     private String accountNumber;
 
-    @Column(name = "accountName", nullable = false, length = 255)
+    @Column(name = "account_name", nullable = false, length = 255)
     private String accountName;
 
-    @Column(name = "description", nullable = true, columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -64,17 +73,18 @@ public class Account {
     @Builder.Default
     private AccountStatus status = AccountStatus.INACTIVE;
 
-    @Column(name = "owner_id", nullable = false)
-    private UUID ownerId;
+    /** The owning party (CIF), not the login user (ADR-0006). */
+    @Column(name = "party_id", nullable = false)
+    private UUID partyId;
 
-    @Column(name="tenant_id", nullable = false)
-    private UUID tenantId;
+    /** The backing ledger account in ledger-core. */
+    @Column(name = "ledger_account_id", nullable = false)
+    private UUID ledgerAccountId;
 
-    @Column(name = "parent_account_id") // for future puposes
+    @Column(name = "parent_account_id")
     private UUID parentAccountId;
 
-    // @JdbcTypeCode(JSON) so Hibernate binds the String as jsonb, not varchar
-    // (Postgres rejects an implicit varchar -> jsonb assignment).
+    // @JdbcTypeCode(JSON) so Hibernate binds the String as jsonb, not varchar.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
@@ -89,11 +99,11 @@ public class Account {
     @Column(name = "version", nullable = false)
     private Long version;
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public record CreateAccountRequest(
+    @NotNull UUID partyId,
     @NotBlank @Size(max = 255) String accountName,
     String description,
     @NotNull AccountType type,

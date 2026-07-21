@@ -48,6 +48,15 @@ spring:
 grpc:
   server:
     port: 9081
+  # Internal gRPC clients (ADR-0010). The global tenant client-interceptor
+  # (platform-tenancy) puts x-program-id on every outgoing call automatically.
+  client:
+    ledger:
+      address: ${LEDGER_GRPC_ADDRESS:static://localhost:9082}
+      negotiation-type: plaintext
+    party:
+      address: ${PARTY_GRPC_ADDRESS:static://localhost:9093}
+      negotiation-type: plaintext
 
 management:
   endpoints:

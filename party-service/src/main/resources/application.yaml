@@ -5,6 +5,11 @@
 server:
   port: ${SERVER_PORT:8093}
 
+# Internal gRPC surface (ADR-0010) — service-to-service traffic comes in here.
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9093}
+
 spring:
   application:
     name: party-service

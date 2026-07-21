@@ -1,0 +1,32 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+syntax = "proto3";
+
+package fincore.party.v1;
+
+option java_package = "com.harrified.finCore.grpc.party";
+option java_outer_classname = "PartyProto";
+option java_multiple_files = true;
+
+// Internal gRPC service — the authorization facts other services need (ADR-0006).
+// The tenant travels in gRPC metadata (x-program-id), not in these messages.
+service PartyService {
+  // "May this subject act for this party?" — returns whether allowed and the roles held.
+  rpc CheckAccess(CheckAccessRequest) returns (AccessResponse);
+}
+
+message CheckAccessRequest {
+  string party_id = 1;
+  string subject  = 2;
+}
+
+message AccessResponse {
+  string party_id       = 1;
+  string subject        = 2;
+  bool   allowed        = 3;
+  repeated string roles = 4; // OWNER | ADMIN | INITIATOR | APPROVER | VIEWER | SIGNATORY
+}
