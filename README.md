@@ -1,4 +1,4 @@
-# finCore — Core Ledger Engine
+# Harrified Ledger (prev FinCore) — Core Ledger Engine
 
 This repo contains a suite of independently deployable microservices forming a **double-entry bookkeeping engine** that fintechs license and run in their own environment — operating their own instance and database, and building their product around the engine. Built on Java 21, Spring Boot 4, gRPC, and Apache Kafka.
 
