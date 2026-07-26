@@ -1,0 +1,66 @@
+# Copyright (c) 2026-present Harrified tech and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+#
+# Optional local-dev extras. Compose merges this on top of docker-compose.yml
+# automatically, so `docker compose up` also starts:
+#   - pgAdmin   — a DB admin UI (http://localhost:5050)
+#   - localstack — fake AWS (S3/SQS/SES/… ) for account-service's AWS_ENDPOINT
+# To run the stack without these, use: docker compose -f docker-compose.yml up
+
+services:
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: finCore-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@fincore.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      # Desktop mode: skip the login screen for local dev.
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - finCore-network
+
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: finCore-localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb,s3,sqs,ses,secretsmanager,kms
+      DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      DOCKER_HOST: unix:///var/run/docker.sock
+      LS_LOG: warn
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./infrastructure/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - finCore-network
+
+
+# ─── Volumes ───────────────────────────────────────────────────────────────────
+
+volumes:
+  pgadmin_data:
+    driver: local
+  localstack_data:
+    driver: local
+
+# ─── Networks ──────────────────────────────────────────────────────────────────
+# Same named network as the base file; Compose merges the two definitions.
+
+networks:
+  finCore-network:
+    driver: bridge

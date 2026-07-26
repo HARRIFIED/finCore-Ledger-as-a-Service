@@ -1,8 +1,14 @@
 # Copyright (c) 2026-present Harrified tech and contributors
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
-
-version: '3.9'
+#
+# The full local stack: shared infrastructure + the finCore application services
+# (built from source). Optional dev-only extras — pgAdmin and localstack (fake AWS) —
+# live in docker-compose.override.yml, which Compose merges in automatically on
+# `docker compose up`.
+#
+# gRPC ports follow REST + 1000 (account 9081, ledger 9082, party 9093); the tenant
+# propagates over gRPC metadata (x-program-id) — see ADR-0010.
 
 services:
 
@@ -64,25 +70,6 @@ services:
     networks:
       - finCore-network
 
-  localstack:
-    image: localstack/localstack:3.8
-    container_name: finCore-localstack
-    restart: unless-stopped
-    ports:
-      - "4566:4566"
-    environment:
-      SERVICES: dynamodb,s3,sqs,ses,secretsmanager,kms
-      DEFAULT_REGION: us-east-1
-      AWS_DEFAULT_REGION: us-east-1
-      DOCKER_HOST: unix:///var/run/docker.sock
-      LS_LOG: warn
-    volumes:
-      - localstack_data:/var/lib/localstack
-      - ./infrastructure/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - finCore-network
-
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     container_name: finCore-elasticsearch
@@ -132,7 +119,9 @@ services:
     restart: unless-stopped
     ports:
       - "8092:8092"
-      - "9082:9082"
+      # gRPC 9082 inside the network; published on host 9182 to avoid clashing with
+      # ledger-core's host 9082 (internal callers use the container name, not the host port).
+      - "9182:9082"
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://postgres:5432/identity_db
@@ -150,6 +139,58 @@ services:
     networks:
       - finCore-network
 
+  ledger-core-service:
+    build:
+      context: .
+      dockerfile: ledger-core-service/Dockerfile
+    container_name: finCore-ledger-core-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"   # REST (gateway edge / actuator)
+      - "9082:9082"   # gRPC (internal, ADR-0010)
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/ledger_core_db
+      DB_USERNAME: finCore
+      DB_PASSWORD: finCore_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      GRPC_SERVER_PORT: "9082"
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      TRACING_SAMPLE_RATE: "1.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - finCore-network
+
+  party-service:
+    build:
+      context: .
+      dockerfile: party-service/Dockerfile
+    container_name: finCore-party-service
+    restart: unless-stopped
+    ports:
+      - "8093:8093"   # REST (gateway edge / actuator)
+      - "9093:9093"   # gRPC (internal, ADR-0010)
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/party_db
+      DB_USERNAME: finCore
+      DB_PASSWORD: finCore_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      GRPC_SERVER_PORT: "9093"
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      TRACING_SAMPLE_RATE: "1.0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - finCore-network
+
   account-service:
     build:
       context: .
@@ -157,8 +198,8 @@ services:
     container_name: finCore-account-service
     restart: unless-stopped
     ports:
-      - "8081:8081"
-      - "9081:9081"
+      - "8081:8081"   # REST (gateway edge / actuator)
+      - "9081:9081"   # gRPC (internal, ADR-0010)
     environment:
       SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://postgres:5432/account_db
@@ -168,10 +209,18 @@ services:
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
       ZIPKIN_BASE_URL: http://zipkin:9411
+      # Internal gRPC clients (ADR-0010): reach the other services by their compose
+      # DNS name + gRPC port, not localhost. The global tenant interceptor adds x-program-id.
+      LEDGER_GRPC_ADDRESS: static://ledger-core-service:9082
+      PARTY_GRPC_ADDRESS: static://party-service:9093
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_started
+      ledger-core-service:
+        condition: service_started
+      party-service:
         condition: service_started
     networks:
       - finCore-network
@@ -181,8 +230,6 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-  localstack_data:
     driver: local
   elasticsearch_data:
     driver: local
