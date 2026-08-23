@@ -1,0 +1,35 @@
+/**
+ * Copyright (c) 2026-present Harrified tech and contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * See the LICENSE file for details.
+ */
+
+syntax = "proto3";
+
+package fincore.account.v1;
+
+option java_package = "com.harrified.finCore.grpc.account";
+option java_outer_classname = "AccountProto";
+option java_multiple_files = true;
+
+// Internal gRPC service — other services (transfer, hold, …) resolve a customer account to
+// its backing ledger account and owning party. The tenant travels in gRPC metadata
+// (x-program-id), not in these messages (ADR-0009/0010).
+service AccountService {
+  // Fetch one account by id (tenant-scoped). Used to get its ledger account + owning party.
+  rpc GetAccount(GetAccountRequest) returns (Account);
+}
+
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+message Account {
+  string id                = 1;
+  string account_number    = 2;
+  string party_id          = 3;
+  string ledger_account_id = 4;
+  string currency          = 5; // ISO 4217
+  string status            = 6; // ACTIVE | FROZEN | CLOSED
+  string type              = 7; // SAVINGS | CURRENT | CORPORATE
+}

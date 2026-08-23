@@ -17,12 +17,22 @@ plugins {
 }
 
 rootProject.name = 'finCore'
-include 'api-contracts'
-include 'platform-security'
-include 'platform-tenancy'
-include 'platform-outbox'
-include 'ledger-core-service'
-include 'party-service'
-include 'account-service'
-include 'iam-service'
-include 'api-gateway'
+
+// Include each module only if its directory is present. A full checkout has all of them;
+// inside a single service's Docker build only that service plus its module dependencies are
+// copied into the context, so the absent siblings are simply skipped. (Gradle 9 turned an
+// `include` of a missing directory into a hard error, which otherwise breaks per-service images.)
+['api-contracts',
+ 'platform-security',
+ 'platform-tenancy',
+ 'platform-outbox',
+ 'ledger-core-service',
+ 'party-service',
+ 'account-service',
+ 'transfer-service',
+ 'iam-service',
+ 'api-gateway'].each { module ->
+    if (file(module).isDirectory()) {
+        include module
+    }
+}
