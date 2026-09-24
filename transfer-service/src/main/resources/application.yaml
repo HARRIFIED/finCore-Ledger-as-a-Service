@@ -1,0 +1,95 @@
+# Copyright (c) 2026-present Harrified tech and contributors
+# SPDX-License-Identifier: AGPL-3.0-only
+# See the LICENSE file for details.
+
+server:
+  port: ${SERVER_PORT:8084}
+
+# Internal gRPC surface (ADR-0010). transfer-service is a gRPC *client* (party/account/ledger);
+# the server port exists because net.devh always starts one — it carries no services.
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9084}
+  client:
+    party:
+      address: ${PARTY_GRPC_ADDRESS:static://localhost:9093}
+      negotiation-type: plaintext
+    account:
+      address: ${ACCOUNT_GRPC_ADDRESS:static://localhost:9081}
+      negotiation-type: plaintext
+    ledger:
+      address: ${LEDGER_GRPC_ADDRESS:static://localhost:9082}
+      negotiation-type: plaintext
+
+spring:
+  application:
+    name: transfer-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/transfer_db}
+    username: ${DB_USERNAME:finCore}
+    password: ${DB_PASSWORD:finCore_secret}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: GMT
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_BASE_URL:http://localhost:9411}/api/v2/spans
+
+logging:
+  level:
+    com.harrified.finCore: INFO
+    org.hibernate.SQL: WARN
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+logging:
+  level:
+    com.harrified.finCore: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+management:
+  tracing:
+    sampling:
+      probability: 0.1

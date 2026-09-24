@@ -225,6 +225,40 @@ services:
     networks:
       - finCore-network
 
+  transfer-service:
+    build:
+      context: .
+      dockerfile: transfer-service/Dockerfile
+    container_name: finCore-transfer-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"   # REST (gateway edge / actuator)
+      - "9084:9084"   # gRPC server (idle; transfer-service is a gRPC client)
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/transfer_db
+      DB_USERNAME: finCore
+      DB_PASSWORD: finCore_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      # Internal gRPC dependencies (ADR-0010) — reach services by compose DNS name.
+      PARTY_GRPC_ADDRESS: static://party-service:9093
+      ACCOUNT_GRPC_ADDRESS: static://account-service:9081
+      LEDGER_GRPC_ADDRESS: static://ledger-core-service:9082
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      account-service:
+        condition: service_started
+      ledger-core-service:
+        condition: service_started
+      party-service:
+        condition: service_started
+    networks:
+      - finCore-network
+
 
 # ─── Volumes ───────────────────────────────────────────────────────────────────
 

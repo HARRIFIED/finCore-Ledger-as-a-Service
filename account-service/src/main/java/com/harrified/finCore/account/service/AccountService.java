@@ -82,8 +82,10 @@ public class AccountService {
         String accountNumber = generateAccountNumber();
         UUID ledgerAccountId = ledgerClient.createLedgerAccount(accountNumber, "LIABILITY", request.currency());
 
-        // 4. Persist the account, owned by the party.
-        Account account = accounts.save(Account.builder()
+        // 4. Persist the account, owned by the party. saveAndFlush forces the insert now so
+        // Hibernate's @CreationTimestamp/@UpdateTimestamp (and @Version) are populated on the
+        // returned entity — otherwise they generate at commit, after we build the response.
+        Account account = accounts.saveAndFlush(Account.builder()
                 .partyId(request.partyId())
                 .ledgerAccountId(ledgerAccountId)
                 .accountNumber(accountNumber)
